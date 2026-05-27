@@ -1,0 +1,50 @@
+pipeline {
+    agent any
+
+    stages {
+
+        stage('Clone Codebase') {
+            steps {
+                echo 'Cloning from GitHub'
+                git(
+                    url   : 'https://github.com/tahararib/maven-project.git',
+                    branch: 'master'
+                )
+            }
+        }
+
+        stage('Compil & unit tests') {
+            steps {
+                echo 'compil & unit tests'
+            }
+        }
+
+        stage('Build') {
+    steps {
+        withMaven(maven: 'localMAVEN') {
+            sh 'mvn clean package -DskipTests'
+        }
+    }
+    post {
+        success {
+            archiveArtifacts artifacts: '**/*.war', fingerprint: true
+        }
+    }
+}
+
+stage('Deploy to Tomcat') {
+    steps {
+        // Plus de copyArtifacts — le WAR est déjà dans le workspace
+        deploy(
+            adapters: [
+                tomcat9(
+                    url          : 'http://192.168.56.13:8080',
+                    credentialsId: 'cred4tomcat'
+                )
+            ],
+            war: '**/*.war'
+        )
+    }
+}
+    }
+}
